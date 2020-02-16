@@ -1,0 +1,176 @@
+###############################################################################
+        README
+        Jonah Feldman & Sydney Strzempko, 21 Nov 16
+        HW6 - UM
+
+Readme document for a Universal Virtual Machine with labeled section headers.
+In order to understand program architecture and implementation, see
+ARCHITECTURE section below, which goes into greater depth.
+
+###############################################################################
+
+HELP RECEIVED:: Piazza, TAs, etc. - nothing else
+
+HOURS SPENT::  
+        Analysis:         4
+        Preparing Design: 4
+        Solving Problems: 8
+
+###############################################################################
+
+ARHCHITECTURE::
+
+UM (Universal Machine):
+        A master module (um.h/.c) that emulates a simple virtual machine.
+        Represented by a UM struct which stores Program Counter, Registers,
+        and Segmented Memory Struct(see below) and is implemented by a
+        constructor (new_UM), destructor(free_UM), and run command(run_UM),
+        which are called by main. Every other handler function is hidden from
+        the client in the .c module component. The UM structure is hidden from
+        the client using Hanson-idiom pointer abstraction.
+        Accepts program-load input from the client in the form of a .um file
+        called as an argument in the command-line invocation, ex.
+                        ./um your-instruction.um
+        or, optionally, ./um your-instruction.um < input.0 > output.1
+        in order to direct input and output (see I/O Dev) to specific .0 & .1
+        files during program execution.
+UM Module:
+        See um.h, um.c
+        
+I/O Device:
+        Handles user input and output prompts during program execution; exists
+        as a separate module (io.h/.c) of functions called by UM module to 
+        print and read in chars(?) to/from stdin, or in the case of in.um,
+        given as in.0.
+I/O Module:
+        See io.h, io.c
+
+Registers:
+        Eight 32-bit integer registers used to store words manipulated and
+        interpreted by the UM module during program execution; represented by
+        a static array of uint32_t.
+Register Module:
+        See Um struct w/in um.c
+       
+Segmented Memory:
+        Dynamic collection of memory segments implemented by a Seg_mem Struct. 
+        This struct represents an expandable series of variable-length,
+        uniquely tagged segments of UM instructions, and a FILO stack of
+        available tags to previously mapped, then unmapped memory spaces (in
+        order to increase segmented-memory efficiency in searching for 
+        available spaces during program manipulation of segments). The UM
+        struct and associated functions exist in the um.h/.c module, and the
+        struct holds the Hanson pointers to a Sequence (Seq_T) and a Stack
+        (Stack_T) which represent the series of segments, and available tags,
+        respectively.
+Segmented Memory Module:
+        See seg_mem.h, seg_mem.c
+
+UMTESTS::
+
+        halt.um
+                tests HALT with a single-command to halt in .um
+        halt-verbose.um
+                tests HALT; if cmd fails, uses LV & OUT to print an err message
+                back to the user
+        out.um
+                tests LV, OUT; outputs a value to user as an ASCII char that
+                has been loaded into a register
+        lv.um
+                tests LV, OUT; outputs a value to user as an ASCII that was
+                loaded into a register
+        in.um
+                tests IN, OUT; takes in, then prints user input from a register
+        cmov.um
+                tests LV, CMOV, OUT; loads two values to separate registers,
+                then overwrites the contents of one with another, and outputs
+                the resulting content of the overwritten register
+        add.um 
+                tests LV, ADD, OUT; loads two values to separate registers,
+                then adds the two together to a third register and
+                outputs the result
+        mul.um
+                tests LV, MUL, OUT; loads two values to separate registers,
+                then multiplies the two together to a third register and
+                outputs the result
+        div.um
+                tests LV, DIV, OUT; loads two values to separate registers,
+                then divides one by the other to a third register and outputs
+                the result
+        nand.um
+                tests LV, NAND, OUT; loads two values to separate registers,
+                then bitwise-nands the two to a third register and outputs
+                the result
+        sload.um
+                tests LVL, SLOAD, OUT; loads relevant values, then in program
+                execution calls loading of a cmov command (which has already
+                been executed by program counter) to a specific register, which
+                when output to user, will interpret the command to a char
+        sstore.um
+                tests LV, SSTORE, OUT; loads relevant values, then in program
+                execution calls storage of a cmov command with specified regs
+                to a point further down the program execution (before it has 
+                been selected by program counter); if sstore works out, then
+                the given register in cmov command, when output to user, will
+                reflect the new assignment-execution dictated by sstore
+        map.um
+                tests LV, ACTIVATE, SSTORE, SLOAD; calls for activation of a
+                new segment of memory, then stores, then retrieves a command
+                from this segment
+        unmap.um
+                tests LV, ACTIVATE, INACTIVATE, SLOAD/SSTORE, ADD; calls for
+                activation of a new segment of memory, then loads with a
+                specific val/instruct, then inactivates that segment, then
+                calls sload on a certain (preloaded but presumably deleted,
+                along with its containing segment) val/instruct, then adds that
+                to some register and outputs the result
+        loadp.um
+                tests LV, ACTIVATE, SLOAD/SSTORE, LOADP; calls for activation
+                of a new segment of memory, then loads with a series of 
+                instructions sloaded from the current segment; then calls loadp
+                of the new segment to overwrite the current segment; if loadp
+                is executed correctly, output will be printed before the halt
+                command is issued, and if loadp does not execute correctly,
+                the halt command will be issued before any output
+      
+DEPARTURES FROM ORIGINAL DESIGN::
+
+        * In the initial DESIGN of our mem_seg module, specific segments were
+        accessed with a combination of get_seg and set_seg functions, which
+        effectively performed a deep copy on a mem_seg struct and subsequently
+        erased any allocated space. In the final submission of our mem_seg
+        module, we utilized a copy_seg which consolidated the two functions
+        without a particular segment as a transitional, and memory-wise messy,
+        return value and parameter - instead copy_seg moves segments within a
+        pre-established mem_seg struct.
+
+TIME ANALYSIS::
+
+        In order to cleanly analyze program-execution time of our UM, we call
+        our executable on a program with a few additions, ie;
+                /usr/bin/time ./um test.um > /dev/null
+        The time command allows the terminal to print the time information on
+        this program's particular invocation, and the /null command allows any
+        information printed to stdout (which can negatively affect program-
+        execution time) to be diverted to a negligible location.
+        An example input of "/usr/bin/time ./um umbin/midmark.um > /dev/null"
+        might lead the terminal to print;
+                4.67user 0.00system 0:04.68elapsed 99%CPU (0avgtext+0avgdata...
+        From this information we see that midmark executed in 4.68 seconds
+        given its surrounding CPU and user conditions.
+
+        To calculate the amount of time it would take to execute 50 million
+        instructions, we created a test file (not included in UMTESTS),
+        50mil.um, which ran loadval 50 million times - generated by the use
+        of a pretty big loop, so there is not a lot of variability in 
+        instructions, unfortunately - running time on 50mil.um generated these
+        results;
+
+        note: 50mil.um is not submitted because it is too large
+
+
+        Therefore, 50 million instructions would take about 5.04 seconds.
+
+
+###############################################################################
+

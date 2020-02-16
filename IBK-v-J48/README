@@ -1,0 +1,20 @@
+README.txt for Assignment #1
+COMP-135 Machine Learning
+Sydney Strzempko
+
+------------Directory & Environment Notes -------
+
+* Needs imported files in internal "data" folder
+* Needs support for: python 2.x, weka, jvm emulator
+  from main call
+
+---------------- Compile Notes ------------------
+
+>> python main.py
+
+* No other calls needed
+
+----------- Implementation Notes ----------------
+
+* Generates directory 'temp' with test and train splits, and
+  'graphs' with resultant info
